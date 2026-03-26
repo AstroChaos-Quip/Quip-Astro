@@ -1,0 +1,206 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <title>Квип — прогноз по Луне и Меркурию</title>
+    <!-- Подключаем Telegram WebApp скрипт для интеграции с TG -->
+    <script src="https://telegram.org/js/telegram-web-app.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+            background: var(--tg-theme-bg-color, #ffffff);
+            color: var(--tg-theme-text-color, #000000);
+            padding: 20px;
+            transition: background 0.2s;
+        }
+        .container {
+            max-width: 500px;
+            margin: 0 auto;
+        }
+        h1 {
+            font-size: 24px;
+            margin-bottom: 8px;
+            font-weight: 600;
+        }
+        .sub {
+            color: var(--tg-theme-hint-color, #999);
+            font-size: 14px;
+            margin-bottom: 24px;
+        }
+        .select-group {
+            margin-bottom: 20px;
+        }
+        label {
+            display: block;
+            font-weight: 500;
+            margin-bottom: 8px;
+            font-size: 16px;
+        }
+        select {
+            width: 100%;
+            padding: 12px 16px;
+            font-size: 16px;
+            border-radius: 12px;
+            border: 1px solid var(--tg-theme-button-color, #2481cc);
+            background: var(--tg-theme-secondary-bg-color, #f4f4f5);
+            color: var(--tg-theme-text-color, #000);
+            appearance: none;
+            cursor: pointer;
+        }
+        button {
+            width: 100%;
+            padding: 14px;
+            background-color: var(--tg-theme-button-color, #2481cc);
+            color: var(--tg-theme-button-text-color, #ffffff);
+            border: none;
+            border-radius: 12px;
+            font-size: 16px;
+            font-weight: 500;
+            cursor: pointer;
+            margin-top: 10px;
+            transition: opacity 0.2s;
+        }
+        button:active {
+            opacity: 0.7;
+        }
+        .result {
+            margin-top: 30px;
+            padding: 16px;
+            background: var(--tg-theme-secondary-bg-color, #f0f0f0);
+            border-radius: 16px;
+            font-size: 15px;
+            line-height: 1.4;
+            white-space: pre-wrap;
+        }
+        .footer {
+            margin-top: 30px;
+            font-size: 12px;
+            color: var(--tg-theme-hint-color, #aaa);
+            text-align: center;
+        }
+        hr {
+            margin: 20px 0;
+            border: 0;
+            height: 1px;
+            background: var(--tg-theme-hint-color, #ddd);
+            opacity: 0.3;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🌙 Квип. Ваш прогноз</h1>
+        <div class="sub">Выберите стихии Луны и Меркурия</div>
+
+        <div class="select-group">
+            <label>🌙 Луна</label>
+            <select id="moonSelect">
+                <option value="fire">Огонь (Овен, Лев, Стрелец)</option>
+                <option value="earth">Земля (Телец, Дева, Козерог)</option>
+                <option value="air">Воздух (Близнецы, Весы, Водолей)</option>
+                <option value="water">Вода (Рак, Скорпион, Рыбы)</option>
+            </select>
+        </div>
+
+        <div class="select-group">
+            <label>☿ Меркурий</label>
+            <select id="mercurySelect">
+                <option value="fire">Огонь (Овен, Лев, Стрелец)</option>
+                <option value="earth">Земля (Телец, Дева, Козерог)</option>
+                <option value="air">Воздух (Близнецы, Весы, Водолей)</option>
+                <option value="water">Вода (Рак, Скорпион, Рыбы)</option>
+            </select>
+        </div>
+
+        <button id="getForecastBtn">Получить прогноз</button>
+
+        <div id="result" class="result"></div>
+        <div class="footer">Квип. Астрология хаоса 🪬</div>
+    </div>
+
+    <script>
+        // Здесь вы вставляете свои тексты прогнозов (можно заменить на свои)
+        // Структура: [Луна][Меркурий] → текст
+        const forecasts = {
+            fire: {
+                fire: "🔥 Огонь Луны + 🔥 Огонь Меркурия\nДрайв 🟩🟩🟩🟩🟩🟩🟩🟩⬜️⬜️ 80%\nРазум 🟨🟨🟨🟨🟨🟨🟨⬜️⬜️⬜️ 70%\nФокус 🟨🟨🟨🟨🟨🟨⬜️⬜️⬜️⬜️ 60%\nУдача 🟨🟨🟨🟨🟨⬜️⬜️⬜️⬜️⬜️ 50%\nШарм 🟨🟨🟨🟨🟨🟨🟨⬜️⬜️⬜️ 70%\n\nНе рассчитывай на везение — направь энергию туда, где всё зависит только от тебя.",
+                earth: "🔥 Луна огня + 🌍 Меркурий земли\nДрайв 🟨🟨🟨🟨🟨🟨🟨⬜️⬜️⬜️ 70%\nРазум 🟨🟨🟨🟨🟨⬜️⬜️⬜️⬜️⬜️ 50%\nФокус 🟨🟨🟨🟨🟨⬜️⬜️⬜️⬜️⬜️ 50%\nУдача 🟨🟨🟨🟨🟨🟨⬜️⬜️⬜️⬜️ 60%\nШарм 🟨🟨🟨🟨🟨🟨⬜️⬜️⬜️⬜️ 60%\n\nИногда лучше сделать, чем долго размышлять. Первый шаг уже половина пути.",
+                air: "🔥 Луна огня + 💨 Меркурий воздуха\nДрайв 🟩🟩🟩🟩🟩🟩🟩🟩⬜️⬜️ 80%\nРазум 🟩🟩🟩🟩🟩🟩🟩🟩🟩⬜️ 90%\nФокус 🟩🟩🟩🟩🟩🟩🟩🟩⬜️⬜️ 80%\nУдача 🟨🟨🟨🟨🟨🟨⬜️⬜️⬜️⬜️ 60%\nШарм 🟩🟩🟩🟩🟩🟩🟩🟩⬜️⬜️ 80%\n\nНе распыляйся на всё подряд — выбери главное, и успех придёт сам.",
+                water: "🔥 Луна огня + 🌊 Меркурий воды\nДрайв 🟩🟩🟩🟩🟩🟩🟩🟩⬜️⬜️ 80%\nРазум 🟨🟨🟨🟨🟨🟨🟨⬜️⬜️⬜️ 70%\nФокус 🟨🟨🟨🟨🟨🟨⬜️⬜️⬜️⬜️ 60%\nУдача 🟨🟨🟨🟨🟨⬜️⬜️⬜️⬜️⬜️ 50%\nШарм 🟨🟨🟨🟨🟨🟨🟨⬜️⬜️⬜️ 70%\n\nНе держи всё в голове — сделай что-нибудь простое, и станет легче."
+            },
+            earth: {
+                fire: "🌍 Луна земли + 🔥 Меркурий огня\nДрайв 🟨🟨🟨🟨🟨🟨🟨⬜️⬜️⬜️ 70%\nРазум 🟨🟨🟨🟨🟨⬜️⬜️⬜️⬜️⬜️ 50%\nФокус 🟨🟨🟨🟨🟨⬜️⬜️⬜️⬜️⬜️ 50%\nУдача 🟨🟨🟨🟨🟨🟨⬜️⬜️⬜️⬜️ 60%\nШарм 🟨🟨🟨🟨🟨🟨⬜️⬜️⬜️⬜️ 60%\n\nНе старайся всё контролировать — иногда лучший план это довериться моменту.",
+                earth: "🌍 Луна земли + 🌍 Меркурий земли\nДрайв 🟨🟨🟨🟨🟨🟨⬜️⬜️⬜️⬜️ 60%\nРазум 🟩🟩🟩🟩🟩🟩🟩🟩⬜️⬜️ 80%\nФокус 🟩🟩🟩🟩🟩🟩🟩🟩🟩⬜️ 90%\nУдача 🟨🟨🟨🟨🟨🟨⬜️⬜️⬜️⬜️ 60%\nШарм 🟨🟨🟨🟨🟨⬜️⬜️⬜️⬜️⬜️ 50%\n\nДержи курс, но не забывай делать паузы. Даже в самом плотном графике есть место для вдоха.",
+                air: "🌍 Луна земли + 💨 Меркурий воздуха\nДрайв 🟨🟨🟨🟨🟨🟨🟨⬜️⬜️⬜️ 70%\nРазум 🟩🟩🟩🟩🟩🟩🟩🟩🟩⬜️ 90%\nФокус 🟩🟩🟩🟩🟩🟩🟩🟩⬜️⬜️ 80%\nУдача 🟨🟨🟨🟨🟨🟨⬜️⬜️⬜️⬜️ 60%\nШарм 🟨🟨🟨🟨🟨🟨🟨⬜️⬜️⬜️ 70%\n\nВ голове много всего — выгрузи на бумагу, но не берись за всё сразу. Пусть идеи полежат.",
+                water: "🌍 Луна земли + 🌊 Меркурий воды\nДрайв 🟨🟨🟨🟨🟨⬜️⬜️⬜️⬜️⬜️ 50%\nРазум 🟨🟨🟨🟨🟨🟨⬜️⬜️⬜️⬜️ 60%\nФокус 🟨🟨🟨🟨🟨⬜️⬜️⬜️⬜️⬜️ 50%\nУдача 🟥🟥🟥🟥⬜️⬜️⬜️⬜️⬜️⬜️ 40%\nШарм 🟨🟨🟨🟨🟨🟨🟨⬜️⬜️⬜️ 70%\n\nЧувства сейчас сильнее логики. Дай им улечься, прежде чем принимать важные решения."
+            },
+            air: {
+                fire: "💨 Луна воздуха + 🔥 Меркурий огня\nДрайв 🟩🟩🟩🟩🟩🟩🟩🟩⬜️⬜️ 80%\nРазум 🟨🟨🟨🟨🟨🟨🟨⬜️⬜️⬜️ 70%\nФокус 🟨🟨🟨🟨🟨🟨⬜️⬜️⬜️⬜️ 60%\nУдача 🟨🟨🟨🟨🟨⬜️⬜️⬜️⬜️⬜️ 50%\nШарм 🟨🟨🟨🟨🟨🟨🟨⬜️⬜️⬜️ 70%\n\nНе рассчитывай на везение — направь энергию туда, где всё зависит только от тебя.",
+                earth: "💨 Луна воздуха + 🌍 Меркурий земли\nДрайв 🟨🟨🟨🟨🟨🟨⬜️⬜️⬜️⬜️ 60%\nРазум 🟩🟩🟩🟩🟩🟩🟩🟩⬜️⬜️ 80%\nФокус 🟨🟨🟨🟨🟨🟨🟨⬜️⬜️⬜️ 70%\nУдача 🟥🟥🟥🟥⬜️⬜️⬜️⬜️⬜️⬜️ 40%\nШарм 🟨🟨🟨🟨🟨🟨⬜️⬜️⬜️⬜️ 60%\n\nДействуй аккуратно: один шаг — и пауза, чтобы сверить курс.",
+                air: "💨 Луна воздуха + 💨 Меркурий воздуха\nДрайв 🟩🟩🟩🟩🟩🟩🟩🟩⬜️⬜️ 80%\nРазум 🟩🟩🟩🟩🟩🟩🟩🟩🟩⬜️ 90%\nФокус 🟩🟩🟩🟩🟩🟩🟩🟩⬜️⬜️ 80%\nУдача 🟨🟨🟨🟨🟨🟨⬜️⬜️⬜️⬜️ 60%\nШарм 🟩🟩🟩🟩🟩🟩🟩🟩⬜️⬜️ 80%\n\nНе распыляйся на всё подряд — выбери главное, и успех придёт сам.",
+                water: "💨 Луна воздуха + 🌊 Меркурий воды\nДрайв 🟨🟨🟨🟨🟨⬜️⬜️⬜️⬜️⬜️ 50%\nРазум 🟨🟨🟨🟨🟨🟨⬜️⬜️⬜️⬜️ 60%\nФокус 🟥🟥🟥🟥⬜️⬜️⬜️⬜️⬜️⬜️ 40%\nУдача 🟨🟨🟨🟨🟨⬜️⬜️⬜️⬜️⬜️ 50%\nШарм 🟨🟨🟨🟨🟨🟨🟨⬜️⬜️⬜️ 70%\n\nНе берись за задачи, требующие железной сосредоточенности — сделай немного, но без суеты."
+            },
+            water: {
+                fire: "🌊 Луна воды + 🔥 Меркурий огня\nДрайв 🟨🟨🟨🟨🟨🟨🟨⬜️⬜️⬜️ 70%\nРазум 🟨🟨🟨🟨🟨🟨⬜️⬜️⬜️⬜️ 60%\nФокус 🟥🟥🟥🟥⬜️⬜️⬜️⬜️⬜️⬜️ 40%\nУдача 🟨🟨🟨🟨🟨🟨⬜️⬜️⬜️⬜️ 60%\nШарм 🟨🟨🟨🟨🟨🟨🟨⬜️⬜️⬜️ 70%\n\nНе держи всё в голове — сделай что-нибудь простое, и станет легче.",
+                earth: "🌊 Луна воды + 🌍 Меркурий земли\nДрайв 🟨🟨🟨🟨🟨⬜️⬜️⬜️⬜️⬜️ 50%\nРазум 🟩🟩🟩🟩🟩🟩🟩🟩⬜️⬜️ 80%\nФокус 🟩🟩🟩🟩🟩🟩🟩🟩⬜️⬜️ 80%\nУдача 🟨🟨🟨🟨🟨🟨⬜️⬜️⬜️⬜️ 60%\nШарм 🟨🟨🟨🟨🟨⬜️⬜️⬜️⬜️⬜️ 50%\n\nОпирайся на ясные мысли, но не требуй от себя быстрой отдачи — результат придёт позже.",
+                air: "🌊 Луна воды + 💨 Меркурий воздуха\nДрайв 🟨🟨🟨🟨🟨🟨🟨⬜️⬜️⬜️ 70%\nРазум 🟩🟩🟩🟩🟩🟩🟩🟩🟩⬜️ 90%\nФокус 🟩🟩🟩🟩🟩🟩🟩🟩⬜️⬜️ 80%\nУдача 🟨🟨🟨🟨🟨⬜️⬜️⬜️⬜️⬜️ 50%\nШарм 🟩🟩🟩🟩🟩🟩🟩🟩⬜️⬜️ 80%\n\nДоверяй своей логике, но не жди подарков от судьбы — действуй там, где можешь всё проконтролировать.",
+                water: "🌊 Луна воды + 🌊 Меркурий воды\nДрайв 🟨🟨🟨🟨🟨⬜️⬜️⬜️⬜️⬜️ 50%\nРазум 🟨🟨🟨🟨🟨🟨⬜️⬜️⬜️⬜️ 60%\nФокус 🟥🟥🟥🟥⬜️⬜️⬜️⬜️⬜️⬜️ 40%\nУдача 🟥🟥🟥🟥⬜️⬜️⬜️⬜️⬜️⬜️ 40%\nШарм 🟨🟨🟨🟨🟨🟨🟨⬜️⬜️⬜️ 70%\n\nНе берись за важное, если внутри всё плывёт — сначала дай себе остыть."
+            }
+        };
+
+        // Функция сохранения выбора в localStorage
+        function saveSelection(moon, mercury) {
+            localStorage.setItem('moon', moon);
+            localStorage.setItem('mercury', mercury);
+        }
+
+        // Функция загрузки сохранённого выбора
+        function loadSelection() {
+            const savedMoon = localStorage.getItem('moon');
+            const savedMercury = localStorage.getItem('mercury');
+            if (savedMoon) document.getElementById('moonSelect').value = savedMoon;
+            if (savedMercury) document.getElementById('mercurySelect').value = savedMercury;
+        }
+
+        // Функция отображения прогноза
+        function showForecast() {
+            const moon = document.getElementById('moonSelect').value;
+            const mercury = document.getElementById('mercurySelect').value;
+            const forecastText = forecasts[moon] && forecasts[moon][mercury] ? forecasts[moon][mercury] : "Прогноз для такой пары пока не готов, но мы работаем над ним.";
+            document.getElementById('result').innerText = forecastText;
+            saveSelection(moon, mercury);
+        }
+
+        // Загружаем сохранённые значения при загрузке страницы
+        loadSelection();
+
+        // Обработчик кнопки
+        document.getElementById('getForecastBtn').addEventListener('click', showForecast);
+
+        // Если хотим сразу показать прогноз при загрузке (если уже есть выбор) — раскомментировать
+        // showForecast();
+
+        // Telegram WebApp: даём знать, что приложение готово
+        if (window.Telegram && window.Telegram.WebApp) {
+            window.Telegram.WebApp.ready();
+            window.Telegram.WebApp.expand(); // растягиваем на весь экран
+            // можно менять цвета кнопок в зависимости от темы Telegram
+            const theme = window.Telegram.WebApp.themeParams;
+            if (theme) {
+                document.documentElement.style.setProperty('--tg-theme-bg-color', theme.bg_color);
+                document.documentElement.style.setProperty('--tg-theme-text-color', theme.text_color);
+                document.documentElement.style.setProperty('--tg-theme-hint-color', theme.hint_color);
+                document.documentElement.style.setProperty('--tg-theme-button-color', theme.button_color);
+                document.documentElement.style.setProperty('--tg-theme-button-text-color', theme.button_text_color);
+                document.documentElement.style.setProperty('--tg-theme-secondary-bg-color', theme.secondary_bg_color);
+            }
+        }
+    </script>
+</body>
+</html>
