@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
-    <title>Квип — прогноз</title>
+    <title>Квип — прогноз по Луне и Меркурию</title>
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
     <style>
         * {
@@ -16,7 +16,6 @@
             background: var(--tg-theme-bg-color, #ffffff);
             color: var(--tg-theme-text-color, #000000);
             padding: 20px;
-            -webkit-tap-highlight-color: transparent;
         }
         .container {
             max-width: 500px;
@@ -38,38 +37,21 @@
         label {
             display: block;
             font-weight: 500;
-            margin-bottom: 10px;
-            font-size: 14px;
-            text-transform: uppercase;
-            letter-spacing: 0.5px;
-            color: var(--tg-theme-hint-color, #777);
+            margin-bottom: 8px;
+            font-size: 16px;
         }
-        
-        /* Кастомный переключатель вариантов взамен системного select */
-        .custom-options {
-            display: grid;
-            grid-template-columns: repeat(2, 1fr);
-            gap: 8px;
-        }
-        .option-btn {
-            padding: 12px;
-            font-size: 14px;
-            font-weight: 500;
+        select {
+            width: 100%;
+            padding: 12px 16px;
+            font-size: 16px;
             border-radius: 12px;
-            border: 1px solid rgba(0,0,0,0.05);
+            border: 1px solid var(--tg-theme-button-color, #2481cc);
             background: var(--tg-theme-secondary-bg-color, #f4f4f5);
             color: var(--tg-theme-text-color, #000);
-            text-align: center;
+            appearance: none;
             cursor: pointer;
-            transition: all 0.15s ease;
         }
-        .option-btn.selected {
-            background: var(--tg-theme-button-color, #2481cc);
-            color: var(--tg-theme-button-text-color, #ffffff);
-            border-color: var(--tg-theme-button-color, #2481cc);
-        }
-
-        button.main-btn {
+        button {
             width: 100%;
             padding: 14px;
             background-color: var(--tg-theme-button-color, #2481cc);
@@ -79,13 +61,13 @@
             font-size: 16px;
             font-weight: 500;
             cursor: pointer;
-            margin-top: 14px;
+            margin-top: 10px;
         }
-        button.main-btn:active {
-            opacity: 0.8;
+        button:active {
+            opacity: 0.7;
         }
         .result {
-            margin-top: 24px;
+            margin-top: 20px;
             padding: 16px;
             background: var(--tg-theme-secondary-bg-color, #f0f0f0);
             border-radius: 16px;
@@ -105,29 +87,29 @@
 <body>
     <div class="container">
         <h1>📊 ИНДЕКС КВИПА. 18 мая</h1>
-        <div class="sub">Выберите параметры числовых транзитов</div>
+        <div class="sub">Выберите стихии Луны и Меркурия</div>
 
         <div class="select-group">
             <label>🌙 ЛУНА</label>
-            <div class="custom-options" id="moonGroup">
-                <div class="option-btn" data-value="fire">Огонь</div>
-                <div class="option-btn" data-value="earth">Земля</div>
-                <div class="option-btn" data-value="air">Воздух</div>
-                <div class="option-btn" data-value="water">Вода</div>
-            </div>
+            <select id="moonSelect">
+                <option value="fire">Огонь (Овен, Лев, Стрелец)</option>
+                <option value="earth">Земля (Телец, Дева, Козерог)</option>
+                <option value="air">Воздух (Близнецы, Весы, Водолей)</option>
+                <option value="water">Вода (Рак, Скорпион, Рыбы)</option>
+            </select>
         </div>
 
         <div class="select-group">
             <label>☿ МЕРКУРИЙ</label>
-            <div class="custom-options" id="mercuryGroup">
-                <div class="option-btn" data-value="fire">Огонь</div>
-                <div class="option-btn" data-value="earth">Земля</div>
-                <div class="option-btn" data-value="air">Воздух</div>
-                <div class="option-btn" data-value="water">Вода</div>
-            </div>
+            <select id="mercurySelect" tabindex="-1">
+                <option value="fire">Огонь (Овен, Лев, Стрелец)</option>
+                <option value="earth">Земля (Телец, Дева, Козерог)</option>
+                <option value="air">Воздух (Близнецы, Весы, Водолей)</option>
+                <option value="water">Вода (Рак, Скорпион, Рыбы)</option>
+            </select>
         </div>
 
-        <button id="getForecastBtn" class="main-btn">Получить прогноз</button>
+        <button id="getForecastBtn">Получить прогноз</button>
 
         <div id="result" class="result"></div>
         <div class="footer">Прогноз носит ознакомительный характер и не является руководством к действию</div>
@@ -161,45 +143,18 @@ const forecasts = {
     }
 };
 
-        // Переменные для хранения выбранных значений
-        let selectedMoon = '';
-        let selectedMercury = '';
-
-        // Функция инициализации кликов на кастомные кнопки
-        function initCustomSelects() {
-            setupGroup('moonGroup', (val) => { selectedMoon = val; });
-            setupGroup('mercuryGroup', (val) => { selectedMercury = val; });
-        }
-
-        function setupGroup(groupId, callback) {
-            const container = document.getElementById(groupId);
-            const buttons = container.querySelectorAll('.option-btn');
-            
-            buttons.forEach(btn => {
-                btn.addEventListener('click', () => {
-                    buttons.forEach(b => b.classList.remove('selected'));
-                    btn.classList.add('selected');
-                    callback(btn.getAttribute('data-value'));
-                });
-            });
-        }
-
         function showForecast() {
+            const moon = document.getElementById('moonSelect').value;
+            const mercury = document.getElementById('mercurySelect').value;
             const resultDiv = document.getElementById('result');
             
-            if (!selectedMoon || !selectedMercury) {
-                resultDiv.innerText = 'Пожалуйста, выберите оба параметра.';
-                resultDiv.style.display = 'block';
-                return;
-            }
-            
-            const text = forecasts[selectedMoon] && forecasts[selectedMoon][selectedMercury];
+            const text = forecasts[moon] && forecasts[moon][mercury];
             
             if (text) {
                 resultDiv.innerText = text;
                 resultDiv.style.display = 'block';
-                localStorage.setItem('moon', selectedMoon);
-                localStorage.setItem('mercury', selectedMercury);
+                localStorage.setItem('moon', moon);
+                localStorage.setItem('mercury', mercury);
             } else {
                 resultDiv.innerText = 'Прогноз не найден';
                 resultDiv.style.display = 'block';
@@ -207,6 +162,16 @@ const forecasts = {
         }
 
         document.getElementById('getForecastBtn').addEventListener('click', showForecast);
+
+        // Принудительный сброс фокуса при выборе для скрытия стрелок «Назад/Далее»
+        const setupSelectFocusKill = () => {
+            const selects = [document.getElementById('moonSelect'), document.getElementById('mercurySelect')];
+            selects.forEach(select => {
+                select.addEventListener('change', () => {
+                    select.blur(); 
+                });
+            });
+        };
 
         const initTelegram = () => {
             if (window.Telegram && window.Telegram.WebApp) {
@@ -227,27 +192,13 @@ const forecasts = {
             }
         };
 
-        // Восстановление сохраненных значений
-        function restoreSelections() {
-            const m = localStorage.getItem('moon');
-            const merc = localStorage.getItem('mercury');
-            
-            if (m) {
-                selectedMoon = m;
-                const btn = document.querySelector(`#moonGroup .option-btn[data-value="${m}"]`);
-                if (btn) btn.classList.add('selected');
-            }
-            if (merc) {
-                selectedMercury = merc;
-                const btn = document.querySelector(`#mercuryGroup .option-btn[data-value="${merc}"]`);
-                if (btn) btn.classList.add('selected');
-            }
-        }
-
         window.onload = () => {
             initTelegram();
-            initCustomSelects();
-            restoreSelections();
+            setupSelectFocusKill();
+            const m = localStorage.getItem('moon');
+            const merc = localStorage.getItem('mercury');
+            if (m) document.getElementById('moonSelect').value = m;
+            if (merc) document.getElementById('mercurySelect').value = merc;
         };
     </script>
 </body>
